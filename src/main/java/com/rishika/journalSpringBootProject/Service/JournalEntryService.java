@@ -1,21 +1,33 @@
 package com.rishika.journalSpringBootProject.Service;
 
 import com.rishika.journalSpringBootProject.Entity.JournalEntry;
+import com.rishika.journalSpringBootProject.Entity.User;
 import com.rishika.journalSpringBootProject.Repository.JournalEntryRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Component
-public class JournalEntryService extends JournalEntry{
+public class JournalEntryService{
     @Autowired
     private JournalEntryRepository journalEntryRepository;
 
-    public void saveEntry(JournalEntry journalEntity) {
-        journalEntryRepository.save(journalEntity);
+    @Autowired
+    private UserService userService;
+
+    public void saveEntry(JournalEntry journalEntry, String userName) {
+            User user = userService.findByUserName(userName);
+            journalEntry.setDate(LocalDateTime.now());
+            JournalEntry saved = journalEntryRepository.save(journalEntry);
+            user.getJournalEntries().add(saved);
+            userService.saveEntry(user);
+    }
+    public void saveEntry(JournalEntry journalEntry) {
+            journalEntryRepository.save(journalEntry);
     }
 
     public List<JournalEntry> getAll() {
@@ -26,7 +38,10 @@ public class JournalEntryService extends JournalEntry{
         return journalEntryRepository.findById(myId);
     }
 
-    public void deleteById(ObjectId myId){
+    public void deleteById(ObjectId myId, String username){
+         User user = userService.findByUserName(username);
+         user.getJournalEntries().removeIf(x -> x.getId().equals(myId));
+         userService.saveEntry(user);
          journalEntryRepository.deleteById(myId);
     }
 
